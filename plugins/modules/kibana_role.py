@@ -58,7 +58,7 @@ class KibanaRoleInterface(object):
         if data is not None:
             data = json.dumps(data, sort_keys=True)
         if not headers:
-            headers = []
+            headers = self.headers
 
         full_url = "{kibana_url}{path}".format(kibana_url=self.kibana_url, path=url)
         resp, info = fetch_url(self._module, full_url, data=data, headers=headers, method=method)
@@ -73,13 +73,14 @@ class KibanaRoleInterface(object):
             return None        
         elif status_code == 200:
             return self._module.from_json(resp.read())
-        self._module.fail_json(failed=True, msg="Kibana Role API answered with HTTP %d" % status_code, body=self._module.from_json(resp.read()))
-    
+        body = resp.read() if resp else None
+        self._module.fail_json(failed=True, msg="Kibana Role API answered with HTTP %s" % info['body'])
+
     def get_role(self, name):
         return self._send_request("/api/security/role/{name}".format(name=name))
         
-    def create_role(self, name, kibana={}):
-        role_payload = { "kibana": kibana }
+    def create_role(self, name):
+        role_payload = { "kibana": [] }
         self._send_request("/api/security/role/{name}".format(name=name), data=role_payload, method="PUT")
         return self.get_role(name)
 
@@ -95,9 +96,6 @@ def setup_module_object():
     module = AnsibleModule(
         argument_spec=argument_spec,
         supports_check_mode=False,
-        required_if=[
-            ['state', 'present', ['name', 'email']],
-        ]
     )
     return module
 
