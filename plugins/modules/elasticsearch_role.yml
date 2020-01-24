@@ -1,0 +1,22 @@
+---
+- name: Create an Elasticsearch Role
+  elasticsearch_role:
+    url: "http://localhost:9200"
+    url_username: elastic
+    url_password: changeme
+    name: my_simple_role
+    cluster:
+      - all
+    indices:
+      - names:
+          - index1
+        privileges:
+          - all
+    applications:
+      - application: myapp
+        privileges:
+          - admin
+          - read
+        resources:
+          - "*"
+    state: present
