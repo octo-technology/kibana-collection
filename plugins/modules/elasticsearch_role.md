@@ -69,3 +69,5 @@ curl -X POST --user elastic:changeme "localhost:9200/_security/role/my_admin_rol
 ```
 curl -X DELETE  --user elastic:changeme  "localhost:5601/api/security/role/my_kibana_role" -H 'kbn-xsrf: true'
 ```
+
+curl -X GET  --user elastic:changeme  "localhost:5601//api/security/role/my_fezfze_role" -H 'kbn-xsrf: true'

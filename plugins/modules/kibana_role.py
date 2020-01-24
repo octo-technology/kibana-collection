@@ -78,7 +78,7 @@ class KibanaRoleInterface(object):
     def get_role(self, name):
         return self._send_request("/api/security/role/{name}".format(name=name))
         
-    def create_role(self, name, kibana):
+    def create_role(self, name, kibana={}):
         role_payload = { "kibana": kibana }
         self._send_request("/api/security/role/{name}".format(name=name), data=role_payload, method="PUT")
         return self.get_role(name)
@@ -111,21 +111,18 @@ del argument_spec['http_agent']
 
 argument_spec.update(
     url=dict(type='str', required=True),
-    url_username=dict(aliases=['grafana_user'], default='admin'),
-    url_password=dict(aliases=['grafana_password'], type='str', required=True, no_log=True),
+    url_username=dict(default='elastic'),
+    url_password=dict(type='str', required=True, no_log=True),
     state=dict(choices=['present', 'absent'], default='present'),
-    name=dict(type='str', required=False),
-    email=dict(type='str', required=False),
-    login=dict(type='str', required=True),
-    password=dict(type='str', required=False, no_log=True),
-    is_admin=dict(type='bool', default=False),
+    name=dict(type='str', required=True),
+    kibana=dict(type='str', required=False), # TODO change to complexe type
 )
 
 
 def main():
     module = setup_module_object()
     name = module.params['name']
-    kibana = module.params['kibana']
+    # kibana = module.params['kibana']
     state = module.params['state']
 
     kibana_iface = KibanaRoleInterface(module)
@@ -134,12 +131,13 @@ def main():
     target_role = kibana_iface.get_role(name)
     if state == 'present':
 
-        if (target_role is None) or (is_role_update_required(target_role, kibana)):
+        if target_role is None:
+        # ) or (is_role_update_required(target_role, kibana)):
             # create or update role
-            role = kibana_iface.create_role(name, kibana)
-            module.exit_json(changed=True, role=role)
+            created_role = kibana_iface.create_role(name)
+            module.exit_json(changed=True, role=created_role)
 
-        module.exit_json(role=role)
+        module.exit_json(role=target_role)
 
     elif state == 'absent':
         if target_role is None:

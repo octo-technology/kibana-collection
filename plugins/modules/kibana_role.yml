@@ -5,11 +5,11 @@
     url_username: elastic
     url_password: changeme
     name: my_kibana_role
-    kibana:
-      - feature:
-          dashboard:
-            - read 
-        spaces:
-          - finance
+    # kibana:
+    #   - feature:
+    #       dashboard:
+    #         - read 
+    #     spaces:
+    #       - finance
     state: present
 ...
