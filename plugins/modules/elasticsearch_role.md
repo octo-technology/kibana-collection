@@ -1,5 +1,30 @@
 ```
-curl -X POST --user elastic:changeme "localhost:9200/_security/role/my_simple_role?pretty" -H 'Content-Type: application/json' -d'
+curl -X PUT  --user elastic:changeme  "localhost:5601/api/security/role/my_kibana_role" -H 'kbn-xsrf: true' -H 'Content-Type: application/json' -d'
+{
+  "metadata" : {
+    "version" : 1
+  },
+  "elasticsearch": {
+    "cluster" : [ ],
+    "indices" : [ ]
+  },
+  "kibana": [
+    {
+      "base": [],
+      "feature": {
+        "dashboard": ["read"]
+      },
+      "spaces": [
+        "finance"
+      ]
+    }
+  ]
+}
+'
+```
+
+```
+curl -X POST --user elastic:changeme "localhost:9200/_security/role/my_super_simple_role?pretty" -H 'Content-Type: application/json' -d'
 {
     "cluster": ["all"],
     "indices": [
@@ -7,15 +32,9 @@ curl -X POST --user elastic:changeme "localhost:9200/_security/role/my_simple_ro
         "names": [ "index1" ],
         "privileges": ["all"]
     }
-    ],
-    "applications": [
-    {
-        "application": "myapp",
-        "privileges": [ "admin", "read" ],
-        "resources": [ "*" ]
-    }
     ]
 }
+'
 ```
 
 ```
@@ -45,4 +64,8 @@ curl -X POST --user elastic:changeme "localhost:9200/_security/role/my_admin_rol
   }
 }
 '
+```
+
+```
+curl -X DELETE  --user elastic:changeme  "localhost:5601/api/security/role/my_kibana_role" -H 'kbn-xsrf: true'
 ```

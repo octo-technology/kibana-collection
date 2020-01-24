@@ -1,0 +1,152 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+# This file is part of Ansible
+#
+# Ansible is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Ansible is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright: (c) 2020, TODO
+
+from __future__ import absolute_import, division, print_function
+
+ANSIBLE_METADATA = {
+    'status': ['preview'],
+    'supported_by': 'community',
+    'metadata_version': '1.1'
+}
+
+DOCUMENTATION = '''
+---
+'''
+
+EXAMPLES = '''
+'''
+
+RETURN = '''
+'''
+
+import json
+
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.urls import fetch_url, url_argument_spec, basic_auth_header
+
+__metaclass__ = type
+
+
+class KibanaRoleInterface(object):
+
+    def __init__(self, module):
+        self._module = module
+        # {{{ Authentication header
+        self.headers = {"Content-Type": "application/json"}
+        self.headers["Authorization"] = basic_auth_header(module.params['url_username'], module.params['url_password'])
+        self.headers["kbn-xsrf"] = "true"
+        # }}}
+        self.kibana_url = module.params.get("url")
+
+    def _send_request(self, url, data=None, headers=None, method="GET"):
+        if data is not None:
+            data = json.dumps(data, sort_keys=True)
+        if not headers:
+            headers = []
+
+        full_url = "{kibana_url}{path}".format(kibana_url=self.kibana_url, path=url)
+        resp, info = fetch_url(self._module, full_url, data=data, headers=headers, method=method)
+        status_code = info["status"]
+        if status_code == 404:
+            return None
+        elif status_code == 401:
+            self._module.fail_json(failed=True, msg="Unauthorized to perform action '%s' on '%s' header: %s" % (method, full_url, self.headers))
+        elif status_code == 403:
+            self._module.fail_json(failed=True, msg="Permission Denied")
+        elif status_code == 204:
+            return None        
+        elif status_code == 200:
+            return self._module.from_json(resp.read())
+        self._module.fail_json(failed=True, msg="Kibana Role API answered with HTTP %d" % status_code, body=self._module.from_json(resp.read()))
+    
+    def get_role(self, name):
+        return self._send_request("/api/security/role/{name}".format(name=name))
+        
+    def create_role(self, name, kibana):
+        role_payload = { "kibana": kibana }
+        self._send_request("/api/security/role/{name}".format(name=name), data=role_payload, method="PUT")
+        return self.get_role(name)
+
+    def delete_role(self, name):
+        return "TODO"
+
+
+def is_role_update_required(target_role, kibana):
+    return "TODO"
+
+
+def setup_module_object():
+    module = AnsibleModule(
+        argument_spec=argument_spec,
+        supports_check_mode=False,
+        required_if=[
+            ['state', 'present', ['name', 'email']],
+        ]
+    )
+    return module
+
+
+argument_spec = url_argument_spec()
+# remove unnecessary arguments
+del argument_spec['force']
+del argument_spec['force_basic_auth']
+del argument_spec['http_agent']
+
+
+argument_spec.update(
+    url=dict(type='str', required=True),
+    url_username=dict(aliases=['grafana_user'], default='admin'),
+    url_password=dict(aliases=['grafana_password'], type='str', required=True, no_log=True),
+    state=dict(choices=['present', 'absent'], default='present'),
+    name=dict(type='str', required=False),
+    email=dict(type='str', required=False),
+    login=dict(type='str', required=True),
+    password=dict(type='str', required=False, no_log=True),
+    is_admin=dict(type='bool', default=False),
+)
+
+
+def main():
+    module = setup_module_object()
+    name = module.params['name']
+    kibana = module.params['kibana']
+    state = module.params['state']
+
+    kibana_iface = KibanaRoleInterface(module)
+
+    # search existing kibana role
+    target_role = kibana_iface.get_role(name)
+    if state == 'present':
+
+        if (target_role is None) or (is_role_update_required(target_role, kibana)):
+            # create or update role
+            role = kibana_iface.create_role(name, kibana)
+            module.exit_json(changed=True, role=role)
+
+        module.exit_json(role=role)
+
+    elif state == 'absent':
+        if target_role is None:
+            module.exit_json(message="No role found, nothing to do")
+        result = kibana_iface.delete_role(name)
+        module.exit_json(changed=True, message=result)
+
+
+if __name__ == '__main__':
+    main()
