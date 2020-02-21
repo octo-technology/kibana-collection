@@ -1,3 +1,3 @@
-# Ansible Collection - octo_technology.elasticsearch
+# Ansible Collection - octo_technology.kibana
 
 Documentation for the collection.
