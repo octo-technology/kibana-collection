@@ -85,7 +85,9 @@ class KibanaRoleInterface(object):
         return self.get_role(name)
 
     def delete_role(self, name):
-        return "TODO"
+        role_payload = { "kibana": [] }
+        self._send_request("/api/security/role/{name}".format(name=name), data=role_payload, method="DELETE")
+        return self.get_role(name)
 
 
 def is_role_update_required(target_role, kibana):
