@@ -78,9 +78,19 @@ class KibanaRoleInterface(object):
 
     def get_role(self, name):
         return self._send_request("/api/security/role/{name}".format(name=name))
-        
-    def create_role(self, name):
-        role_payload = { "kibana": [] }
+
+    def prepare_payload(self, kibana):
+        payload = []
+        for role in kibana:
+            spaces=["default"]
+            if "spaces" in role.keys():
+                spaces=[role["spaces"]]
+            payload.append(dict(base=[role["base"]], spaces=spaces))
+        return { "kibana": json.dumps(payload) }
+
+    def create_role(self, name, kibana):
+        # https://www.elastic.co/guide/en/kibana/current/role-management-api-put.html
+        role_payload = self.prepare_payload(kibana)
         self._send_request("/api/security/role/{name}".format(name=name), data=role_payload, method="PUT")
         return self.get_role(name)
 
@@ -91,7 +101,7 @@ class KibanaRoleInterface(object):
 
 
 def is_role_update_required(target_role, kibana):
-    return "TODO"
+    return True
 
 
 def setup_module_object():
@@ -115,14 +125,14 @@ argument_spec.update(
     url_password=dict(type='str', required=True, no_log=True),
     state=dict(choices=['present', 'absent'], default='present'),
     name=dict(type='str', required=True),
-    kibana=dict(type='str', required=False), # TODO change to complexe type
+    kibana=dict(type='list', required=False, default=[]),
 )
 
 
 def main():
     module = setup_module_object()
     name = module.params['name']
-    # kibana = module.params['kibana']
+    kibana = module.params['kibana']
     state = module.params['state']
 
     kibana_iface = KibanaRoleInterface(module)
@@ -131,10 +141,9 @@ def main():
     target_role = kibana_iface.get_role(name)
     if state == 'present':
 
-        if target_role is None:
-        # ) or (is_role_update_required(target_role, kibana)):
+        if (target_role is None) or (is_role_update_required(target_role, kibana)):
             # create or update role
-            created_role = kibana_iface.create_role(name)
+            created_role = kibana_iface.create_role(name, kibana)
             module.exit_json(changed=True, role=created_role)
 
         module.exit_json(role=target_role)
