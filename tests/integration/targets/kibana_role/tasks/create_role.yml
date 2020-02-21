@@ -6,11 +6,17 @@
     url_username: elastic
     url_password: changeme
     name: my_atf_role
+    kibana:
+      - base: all
   register: result
+
+- debug:
+    var: result.role.kibana[0].base
 
 - assert:
     that:
     - "result.changed"
+    - "result.role.kibana[0].base == [\"all\"]"
 
 - name: Create a Kibana role (idempotency)
   kibana_role:
