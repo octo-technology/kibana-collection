@@ -1,5 +1,4 @@
 ---
-# TODO delete this file from final push
 
 - name: Create a Kibana role
   kibana_role:
@@ -7,3 +6,20 @@
     url_username: elastic
     url_password: changeme
     name: my_atf_role
+  register: result
+
+- assert:
+    that:
+    - "result.changed"
+
+- name: Create a Kibana role (idempotency)
+  kibana_role:
+    url: "http://localhost:5601"
+    url_username: elastic
+    url_password: changeme
+    name: my_atf_role
+  register: result
+
+- assert:
+    that:
+    - "not result.changed"
