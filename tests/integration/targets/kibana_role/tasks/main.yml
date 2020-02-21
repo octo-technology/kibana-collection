@@ -1,57 +1,12 @@
 ---
+- name: Test Kibana role collection
+  block:
+    - name: Ensure my_atf_role is created
+      import_tasks: create_role.yml
 
-- name: Create a Kibana role
-  kibana_role:
-    url: "http://localhost:5601"
-    url_username: elastic
-    url_password: changeme
-    name: my_atf_role
-  register: result
+    - name: Ensure my_atf_role is created
+      import_tasks: delete_role.yml
 
-- assert:
-    that:
-    - "result.changed"
-
-- name: Create a Kibana role (idempotency)
-  kibana_role:
-    url: "http://localhost:5601"
-    url_username: elastic
-    url_password: changeme
-    name: my_atf_role
-  register: result
-
-- assert:
-    that:
-    - "not result.changed"
-
-- name: Delete a Kibana role
-  kibana_role:
-    url: "http://localhost:5601"
-    url_username: elastic
-    url_password: changeme
-    name: my_atf_role
-    state: absent
-
-- name: Check if the role has been deleted in Kibana
-  uri:
-    url: http://localhost:5601/api/security/role/my_atf_role
-    method: GET
-    status_code: "404"
-    user: elastic
-    password: changeme
-    force_basic_auth: yes
-    headers:
-      kbn-xsrf: true
-  register: login
-
-- name: Delete a Kibana role (idempotency)
-  kibana_role:
-    url: "http://localhost:5601"
-    url_username: elastic
-    url_password: changeme
-    name: my_atf_role
-    state: absent
-
-- assert:
-    that:
-    - "not result.changed"
+  always:
+    - name: Ensure my_atf_role is always deleted
+      import_tasks: clean.yml

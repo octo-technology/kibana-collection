@@ -1,0 +1,7 @@
+- name: Ensure my_atf_role Kibana role's is always deleted
+  kibana_role:
+    url: "http://localhost:5601"
+    url_username: elastic
+    url_password: changeme
+    name: my_atf_role
+    state: absent
